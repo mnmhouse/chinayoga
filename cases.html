@@ -20,26 +20,7 @@
 
   <section class="section">
     <div class="wrap">
-      <div class="grid grid-3">
-        <div class="card reveal">
-          <div class="ic">🚶</div>
-          <h3>陈老师 · 八卦步</h3>
-          <p>“坚持练八卦步、穴位拍打一段时间，感觉走路轻快了些，晚上也更容易入睡。把功法当日常习惯，不急不躁。”</p>
-          <p class="note">—— 个人体验分享，非医疗承诺</p>
-        </div>
-        <div class="card reveal">
-          <div class="ic">🌿</div>
-          <h3>林女士 · 共修静心</h3>
-          <p>“每晚跟着共修，心好像有了安放的地方。焦虑还在，但没那么容易被卷走了。饮食也更规律了。”</p>
-          <p class="note">—— 个人体验分享，非医疗承诺</p>
-        </div>
-        <div class="card reveal">
-          <div class="ic">🦶</div>
-          <h3>周先生 · 赤脚班</h3>
-          <p>“周末到梧桐山赤脚走泥地、抱树，城市里的紧绷松了下来。回来工作更有精神，也算给自己放了个假。”</p>
-          <p class="note">—— 个人体验分享，非医疗承诺</p>
-        </div>
-      </div>
+      <div id="cases-list" class="grid grid-3"></div>
 
       <div class="callout warn reveal" style="margin-top:36px">
         <h4>重要说明</h4>
@@ -54,5 +35,7 @@
 
   <footer class="site-footer" id="site-footer"></footer>
   <script src="assets/js/main.js"></script>
+  <script src="assets/js/content.js"></script>
+  <script>ContentHub.load('cases','cases-list',{render:ContentHub.renderCases});</script>
 </body>
 </html>

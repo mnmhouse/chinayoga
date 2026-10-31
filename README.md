@@ -15,12 +15,22 @@ chinayoga/
 ├── base.html           # 线下基地：梧桐山·慈禅甘露堂 + 如是心东方食养
 ├── charity.html        # 公益善行（日行一善 / 尼泊尔 / 普陀寺义诊）
 ├── alliance.html       # 康养联盟（入驻对象 / 收费模式 / 申请 / 合规边界）
-├── essays.html         # 文化随笔
-├── cases.html          # 学员案例
+├── essays.html         # 文化随笔（动态渲染）
+├── cases.html          # 学员案例（动态渲染）
+├── charity.html        # 公益善行（公益足迹动态渲染）
 ├── booking.html        # 线下预约表单
+├── admin.html          # 内容发布后台（管理页面，需环境变量）
+├── content/            # 动态内容数据源（JSON，由后台发布写入）
+│   ├── essays.json     #   文化随笔
+│   ├── cases.json      #   学员案例
+│   ├── charity.json    #   公益善行
+│   └── news.json       #   首页最新动态
+├── api/
+│   └── content.js      # Vercel 无服务器函数：鉴权后把内容写回 GitHub 仓库
 ├── assets/
 │   ├── css/style.css   # 共享设计系统（宣纸米白 / 苔玉绿 / 赭金）
 │   ├── js/main.js      # 导航与页脚注入、移动端菜单、滚动动画、表单演示
+│   ├── js/content.js   # 动态内容加载与渲染
 │   └── img/wutong.svg  # 梧桐山·慈禅甘露堂意境图
 └── vercel.json         # Vercel 纯静态部署配置
 ```
@@ -47,6 +57,20 @@ python3 -m http.server 8123 --bind 127.0.0.1
 仓库已含 `vercel.json`（明确纯静态、不跑构建）。可：
 - 在 Vercel 导入本 GitHub 仓库（`mnmhouse/chinayoga`），自动识别为静态站；或
 - 本地执行 `vercel deploy --prod`。
+
+#### 内容管理后台（动态发布）
+站点内容（文化随笔 / 学员案例 / 公益善行 / 最新动态）由 `content/*.json` 驱动，页面运行时渲染；`admin.html` 是发布后台。发布流程：后台 → Vercel 无服务器函数 `api/content.js` → 写回 GitHub 仓库 → 自动重新部署生效。
+
+**部署后需在 Vercel 项目设置里配置两个环境变量**（Settings → Environment Variables）：
+- `ADMIN_KEY`：管理后台登录密码（自定义，例如 `你的强密码`）。
+- `GITHUB_TOKEN`：具备本仓库 `contents: read & write` 权限的 GitHub 个人访问令牌（fine-grained token 勾选该仓库 Contents 读写，或 classic token 勾 `repo`）。
+
+配置完成后：
+1. 访问 `https://你的域名/admin.html`（如 https://chinayoga.com/admin.html）。
+2. 输入 `ADMIN_KEY` 进入，选择栏目 → 新建 / 编辑 / 删除。
+3. 保存后约 1–2 分钟站点更新。
+
+> 说明：本地预览（`python3 -m http.server`）也能看到动态内容，但「保存发布」依赖 Vercel 函数与上面两个环境变量，仅在部署后可用。
 
 ## 合规说明
 

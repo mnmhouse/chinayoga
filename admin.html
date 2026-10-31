@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>内容发布后台 · 中国瑜伽网</title>
+  <meta name="robots" content="noindex">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <style>
+    .admin { max-width: 980px; margin: 0 auto; padding: 40px 16px 64px; }
+    .admin-login { max-width: 360px; margin: 80px auto; text-align: center; }
+    .admin-login input { width: 100%; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; font-size: 15px; margin: 14px 0; }
+    .admin-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+    .admin-head h2 { margin: 0; }
+    .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 22px; border-bottom: 1px solid var(--line); padding-bottom: 12px; }
+    .tab { padding: 8px 16px; border-radius: 999px; border: 1px solid var(--line); background: var(--paper); cursor: pointer; font-size: 14px; }
+    .tab.active { background: var(--jade-deep); color: #fff; border-color: var(--jade-deep); }
+    .admin-body { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    @media (max-width: 760px){ .admin-body { grid-template-columns: 1fr; } }
+    .admin-list .item { border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; background: #fff; }
+    .admin-list .item h4 { margin: 0 0 4px; font-size: 16px; }
+    .admin-list .item .meta { color: #8a8268; font-size: 12px; margin-bottom: 8px; }
+    .admin-list .item .row { display: flex; gap: 8px; }
+    .admin-form { border: 1px solid var(--line); border-radius: 12px; padding: 18px; background: #fff; align-self: start; }
+    .admin-form h3 { margin-top: 0; }
+    .field { margin-bottom: 14px; }
+    .field label { display: block; font-size: 13px; color: var(--ink); margin-bottom: 6px; font-weight: 600; }
+    .field input, .field textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; font-family: inherit; }
+    .field textarea { min-height: 110px; resize: vertical; }
+    .form-actions { display: flex; gap: 10px; margin-top: 6px; }
+    .form-result { color: var(--jade-deep); font-size: 14px; margin-top: 12px; display: none; }
+    .note.tip { color:#8a8268; font-size:12px; margin-top:10px; }
+  </style>
+</head>
+<body>
+  <header class="site-header" id="site-header"></header>
+
+  <main class="admin">
+    <!-- 登录 -->
+    <div id="login" class="admin-login">
+      <h2>内容发布后台</h2>
+      <p class="note">请输入管理密码（ADMIN_KEY）进入</p>
+      <input id="key" type="password" placeholder="管理密码 ADMIN_KEY" autocomplete="current-password">
+      <button class="btn btn-primary" id="loginBtn" style="width:100%">进入后台</button>
+      <p class="note" id="loginMsg"></p>
+    </div>
+
+    <!-- 主界面 -->
+    <div id="app" class="admin-app" style="display:none">
+      <div class="admin-head">
+        <h2>内容发布后台</h2>
+        <div>
+          <a class="btn btn-outline btn-sm" href="index.html">查看站点</a>
+          <button class="btn btn-gold btn-sm" id="logout">退出</button>
+        </div>
+      </div>
+
+      <div class="tabs" id="tabs"></div>
+
+      <div class="admin-body">
+        <div class="admin-list" id="list">
+          <button class="btn btn-primary btn-sm" id="newBtn">+ 新建一条</button>
+          <div id="listItems" style="margin-top:14px"></div>
+        </div>
+
+        <div class="admin-form" id="formPanel" style="display:none">
+          <h3 id="formTitle">新建</h3>
+          <form id="itemForm"></form>
+          <div class="form-actions">
+            <button class="btn btn-primary" id="saveBtn">保存发布</button>
+            <button class="btn btn-outline" id="cancelBtn" type="button">取消</button>
+          </div>
+          <p class="form-result" id="formMsg"></p>
+        </div>
+      </div>
+      <p class="note tip">提示：保存后会自动提交到代码仓库并触发站点重新部署，通常 1–2 分钟生效。本后台仅在部署到 Vercel 后可用；本地预览无法保存。</p>
+    </div>
+  </main>
+
+  <footer class="site-footer" id="site-footer"></footer>
+  <script src="assets/js/main.js"></script>
+  <script>
+  (function () {
+    "use strict";
+    var TYPES = [
+      { key: "essays",  label: "文化随笔" },
+      { key: "cases",   label: "学员案例" },
+      { key: "charity", label: "公益善行" },
+      { key: "news",    label: "最新动态" }
+    ];
+    var SCHEMA = {
+      essays:  [ {k:"title",l:"标题",r:1}, {k:"tag",l:"栏目标签(如 梧桐山·小记)"}, {k:"author",l:"作者/署名"}, {k:"date",l:"日期 YYYY-MM-DD"}, {k:"body",l:"正文(空行分段)",t:"textarea",r:1} ],
+      cases:   [ {k:"name",l:"姓名/称呼",r:1}, {k:"tag",l:"主题标签"}, {k:"icon",l:"图标 emoji"}, {k:"text",l:"分享内容",t:"textarea",r:1} ],
+      charity: [ {k:"title",l:"标题",r:1}, {k:"date",l:"时间/年份(如 日常/常年)"}, {k:"body",l:"内容",t:"textarea",r:1} ],
+      news:    [ {k:"title",l:"标题",r:1}, {k:"date",l:"日期 YYYY-MM-DD"}, {k:"content",l:"内容",t:"textarea",r:1} ]
+    };
+    var KEY = "cy_admin_key";
+    var state = { type: "essays", editingId: null };
+
+    function key() { return sessionStorage.getItem(KEY) || ""; }
+    function el(id) { return document.getElementById(id); }
+
+    function renderTabs() {
+      el("tabs").innerHTML = TYPES.map(function (t) {
+        return '<span class="tab' + (t.key === state.type ? " active" : "") + '" data-t="' + t.key + '">' + t.label + "</span>";
+      }).join("");
+      Array.prototype.forEach.call(el("tabs").querySelectorAll(".tab"), function (tab) {
+        tab.addEventListener("click", function () {
+          state.type = tab.getAttribute("data-t");
+          state.editingId = null;
+          el("formPanel").style.display = "none";
+          renderTabs();
+          loadList();
+        });
+      });
+    }
+
+    function loadList() {
+      fetch("content/" + state.type + ".json", { cache: "no-cache" })
+        .then(function (r) { return r.ok ? r.json() : []; })
+        .then(function (data) {
+          data = Array.isArray(data) ? data : [];
+          if (!data.length) { el("listItems").innerHTML = '<p class="note">暂无内容，点「新建」发布第一条。</p>'; return; }
+          el("listItems").innerHTML = data.map(function (it) {
+            var title = it.title || it.name || "(未命名)";
+            var meta = [it.date, it.tag, it.author].filter(Boolean).join(" · ");
+            return '<div class="item"><h4>' + esc(title) + "</h4>" +
+              (meta ? '<div class="meta">' + esc(meta) + "</div>" : "") +
+              '<div class="row"><button class="btn btn-outline btn-sm" data-edit="' + esc(it.id) + '">编辑</button>' +
+              '<button class="btn btn-outline btn-sm" data-del="' + esc(it.id) + '">删除</button></div></div>';
+          }).join("");
+          Array.prototype.forEach.call(el("listItems").querySelectorAll("[data-edit]"), function (b) {
+            b.addEventListener("click", function () { openForm(b.getAttribute("data-edit")); });
+          });
+          Array.prototype.forEach.call(el("listItems").querySelectorAll("[data-del]"), function (b) {
+            b.addEventListener("click", function () { del(b.getAttribute("data-del")); });
+          });
+        })
+        .catch(function () { el("listItems").innerHTML = '<p class="note">列表加载失败。</p>'; });
+    }
+
+    function openForm(id) {
+      state.editingId = id || null;
+      el("formTitle").textContent = id ? "编辑" : "新建";
+      el("formMsg").style.display = "none";
+      var fields = SCHEMA[state.type];
+      fetch("content/" + state.type + ".json", { cache: "no-cache" })
+        .then(function (r) { return r.ok ? r.json() : []; })
+        .then(function (data) {
+          var cur = id ? (data.filter(function (x) { return x.id === id; })[0] || {}) : {};
+          el("itemForm").innerHTML = fields.map(function (f) {
+            var val = cur[f.k] != null ? cur[f.k] : "";
+            return '<div class="field"><label>' + esc(f.l) + (f.r ? " *" : "") + "</label>" +
+              (f.t === "textarea"
+                ? '<textarea name="' + f.k + '">' + esc(val) + "</textarea>"
+                : '<input name="' + f.k + '" value="' + esc(val) + '">') + "</div>";
+          }).join("");
+          el("formPanel").style.display = "block";
+        });
+    }
+
+    function save() {
+      var fields = SCHEMA[state.type];
+      var item = {};
+      fields.forEach(function (f) {
+        var node = el("itemForm").querySelector('[name="' + f.k + '"]');
+        item[f.k] = node ? node.value.trim() : "";
+        if (f.r && !item[f.k]) { alert("请填写：" + f.l); throw new Error("missing " + f.k); }
+      });
+      item.id = state.editingId || (state.type + "-" + Date.now().toString(36));
+
+      var msg = el("formMsg");
+      msg.style.display = "none";
+      el("saveBtn").disabled = true;
+      api("POST", state.type, { item: item })
+        .then(function () {
+          msg.textContent = "✓ 已保存并触发重新部署，稍后刷新站点即可看到。";
+          msg.style.display = "block";
+          state.editingId = null;
+          el("formPanel").style.display = "none";
+          loadList();
+        })
+        .catch(function (e) {
+          msg.textContent = "✗ 保存失败：" + (e && e.message ? e.message : "请确认已部署到 Vercel 并配置环境变量");
+          msg.style.display = "block";
+        })
+        .then(function () { el("saveBtn").disabled = false; });
+    }
+
+    function del(id) {
+      if (!confirm("确定删除这条内容？")) return;
+      api("DELETE", state.type, { id: id })
+        .then(function () { loadList(); })
+        .catch(function (e) { alert("删除失败：" + (e && e.message ? e.message : "未知错误")); });
+    }
+
+    function api(method, type, body) {
+      return fetch("/api/content?type=" + encodeURIComponent(type), {
+        method: method,
+        headers: { "Content-Type": "application/json", "x-admin-key": key() },
+        body: JSON.stringify(body)
+      }).then(function (r) {
+        if (!r.ok) { return r.json().catch(function(){return {};}).then(function(d){ throw new Error(d.error || ("HTTP " + r.status)); }); }
+        return r.json();
+      });
+    }
+
+    function esc(s) {
+      return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+      });
+    }
+
+    function enter() {
+      var k = el("key").value.trim();
+      if (!k) { el("loginMsg").textContent = "请输入管理密码"; return; }
+      sessionStorage.setItem(KEY, k);
+      el("login").style.display = "none";
+      el("app").style.display = "block";
+      renderTabs();
+      loadList();
+    }
+
+    el("loginBtn").addEventListener("click", enter);
+    el("key").addEventListener("keydown", function (e) { if (e.key === "Enter") enter(); });
+    el("logout").addEventListener("click", function () { sessionStorage.removeItem(KEY); location.reload(); });
+    el("newBtn").addEventListener("click", function () { openForm(null); });
+    el("saveBtn").addEventListener("click", function () { try { save(); } catch (e) {} });
+    el("cancelBtn").addEventListener("click", function () { state.editingId = null; el("formPanel").style.display = "none"; });
+
+    // 若已登录则直接进入
+    if (key()) { el("login").style.display = "none"; el("app").style.display = "block"; renderTabs(); loadList(); }
+  })();
+  </script>
+</body>
+</html>

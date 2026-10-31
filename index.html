@@ -187,6 +187,21 @@
     </div>
   </section>
 
+  <!-- 最新动态 -->
+  <section class="section">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">最新动态 · UPDATES</span>
+        <h2>平台动态</h2>
+        <p>老站重启，旧业新生。这里记录中国瑜伽网康养联盟的最新进展与公益践行。</p>
+      </div>
+      <div class="grid grid-2" id="news-list"></div>
+      <div class="center reveal" style="margin-top:30px">
+        <a class="btn btn-outline" href="essays.html">阅读更多随笔</a>
+      </div>
+    </div>
+  </section>
+
   <!-- 愿景 -->
   <section class="section center">
     <div class="wrap">
@@ -202,5 +217,7 @@
   <footer class="site-footer" id="site-footer"></footer>
 
   <script src="assets/js/main.js"></script>
+  <script src="assets/js/content.js"></script>
+  <script>ContentHub.load('news','news-list',{render:ContentHub.renderNews});</script>
 </body>
 </html>

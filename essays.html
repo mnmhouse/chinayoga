@@ -20,32 +20,7 @@
 
   <section class="section">
     <div class="wrap">
-      <div class="grid grid-2">
-        <article class="card reveal">
-          <span class="eyebrow">梧桐山 · 小记</span>
-          <h3>赤脚走在泥地上的清晨</h3>
-          <p class="note">清晨的梧桐山，雾气未散。几位家人脱了鞋，沿着林间泥路慢慢走。脚底传来的，不只是凉意，还有一种久违的踏实。我们常说「接地气」，或许身心本就需要这样朴素的连接。</p>
-          <p class="note">—— 慈禅甘露堂共修随笔</p>
-        </article>
-        <article class="card reveal">
-          <span class="eyebrow">公益 · 见闻</span>
-          <h3>尼泊尔山区的那杯温水</h3>
-          <p class="note">义诊队翻过山路，走进村落。语言不通，但一双递过来的手、一杯温水，足以让彼此安心。康养不止是技术，更是一份愿意走近他人的心意。</p>
-          <p class="note">—— 公益帮扶记录</p>
-        </article>
-        <article class="card reveal">
-          <span class="eyebrow">文化 · 漫谈</span>
-          <h3>《了凡四训》里的「改命」</h3>
-          <p class="note">袁了凡以亲身经历讲立命、改过、积善、谦德。我们共读它，不是求什么，而是提醒自己：每一个善意的选择，都在悄悄塑造人生的走向。</p>
-          <p class="note">—— 共读小组分享</p>
-        </article>
-        <article class="card reveal">
-          <span class="eyebrow">养生 · 日常</span>
-          <h3>小动作，为何有大作用</h3>
-          <p class="note">拍打涌泉、温养太溪、缓步八卦——这些动作简单到容易被忽略。可正是日复一日的小坚持，让身体慢慢找回它本有的节律。养生不在惊人之举，在细水长流。</p>
-          <p class="note">—— 功法教学手记</p>
-        </article>
-      </div>
+      <div id="essays-list" class="grid grid-2"></div>
       <div class="center reveal" style="margin-top:34px">
         <a class="btn btn-outline" href="cases.html">看看学员的真实变化</a>
       </div>
@@ -54,5 +29,7 @@
 
   <footer class="site-footer" id="site-footer"></footer>
   <script src="assets/js/main.js"></script>
+  <script src="assets/js/content.js"></script>
+  <script>ContentHub.load('essays','essays-list',{render:ContentHub.renderEssays});</script>
 </body>
 </html>

@@ -42,12 +42,7 @@
         <span class="eyebrow">善行故事 · STORIES</span>
         <h2>公益足迹</h2>
       </div>
-      <div class="timeline reveal">
-        <div class="tl-item"><div class="year">日常</div><h3>尼泊尔山区义诊支援</h3><p>持续支援尼泊尔山区义诊，把中医康养与关怀带到远方，与网站公益板块互相呼应。</p></div>
-        <div class="tl-item"><div class="year">日常</div><h3>珠海普陀寺义诊</h3><p>在名山道场开展义诊与公益关怀，传递身心灵同修的温暖。</p></div>
-        <div class="tl-item"><div class="year">常年</div><h3>日行一善公益群</h3><p>建立日行一善公益群、准提共修祈福群，汇聚同频家人共修共善。</p></div>
-        <div class="tl-item"><div class="year">常态化</div><h3>梧桐山基地公益接待</h3><p>线下基地承接公益共修、义诊与健康关怀活动接待。</p></div>
-      </div>
+      <div id="charity-list" class="timeline reveal"></div>
     </div>
   </section>
 
@@ -63,5 +58,7 @@
 
   <footer class="site-footer" id="site-footer"></footer>
   <script src="assets/js/main.js"></script>
+  <script src="assets/js/content.js"></script>
+  <script>ContentHub.load('charity','charity-list',{render:ContentHub.renderCharity});</script>
 </body>
 </html>
