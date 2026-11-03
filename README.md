@@ -70,10 +70,10 @@ python3 -m http.server 8123 --bind 127.0.0.1
 2. 输入 `ADMIN_KEY` 进入，选择栏目 → 新建 / 编辑 / 删除。
 3. 保存后约 1–2 分钟站点更新。
 
-**图片 / 视频上传（需额外一步）**：因 Vercel 函数有 4.5MB 请求体上限，媒体文件采用「浏览器直传 Vercel Blob」方案，不经过函数，可传任意大小视频。前置：
-- 在 Vercel 项目 **Storage → Create Storage → Blob**，访问级别选 **Public**，创建并连接到本项目；Vercel 会自动写入环境变量 `BLOB_READ_WRITE_TOKEN`（以及 `BLOB_STORE_ID` 等）。
-- 创建后**重新部署一次函数**（在 Vercel Deployments 点最近一次 Redeploy，或再推送一次）即可生效。
-- 后台各栏目表单已含「图片 / 视频」字段：选择文件后自动上传并预览，也可直接粘贴外部图片/视频网址。
+**图片上传（无需额外配置）**：后台各栏目表单含「图片」字段。选择本地图片后，浏览器会先压缩（最长边 ≤1280px、JPEG 质量 0.82，压到 1MB 内），再以 base64 提交到 Vercel 无服务器函数 `api/upload.js`，由函数写入 GitHub 仓库 `assets/uploads/` 并触发重新部署；图片随站点发布到同域 `/assets/uploads/...`，**不依赖 Vercel Blob 或任何外部对象存储**。也可在字段中直接粘贴外部图片网址。
+
+- 该流程仅需上面已配置的 `ADMIN_KEY` 与 `GITHUB_TOKEN`，**无需创建 Blob 存储、无需 `BLOB_READ_WRITE_TOKEN`**。
+- 视频上传未启用；如需视频，建议上传到视频平台后粘贴链接，或后续再单独接入。
 
 > 说明：本地预览（`python3 -m http.server`）也能看到动态内容，但「保存发布 / 媒体上传」依赖 Vercel 函数与上面环境变量，仅在部署后可用。
 

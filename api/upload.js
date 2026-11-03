@@ -1,11 +1,20 @@
-// Vercel 无服务器函数：为后台的图片/视频上传签发「客户端直传令牌」
-// 文件不经过本函数，由浏览器直接上传到 Vercel Blob（绕过 4.5MB 函数请求体限制，可传大视频）。
-// 依赖：@vercel/blob（见同目录 package.json，Vercel 会自动安装）
+// Vercel 无服务器函数：后台「图片」上传
+// 流程：浏览器端压缩图片 → 以 base64 提交到本函数 → 写入 GitHub 仓库 assets/uploads/ → 返回站点同域相对地址
+//   Vercel 重新部署后，图片随仓库一起发布到站点同域（/assets/uploads/...），无需任何外部存储（Blob / OSS）。
 // 鉴权：请求头 x-admin-key 必须等于环境变量 ADMIN_KEY（避免公开上传）
-// 前置：项目需创建 Vercel Blob 存储（自动添加 BLOB_READ_WRITE_TOKEN 环境变量，且存储设为 Public）
+// 依赖：仅 Node.js 内置能力，无需第三方包（可删除同目录 package.json）
 
-const ADMIN_KEY = () => process.env.ADMIN_KEY;
-const ALLOWED = ["essays", "cases", "charity", "news"];
+const REPO = "mnmhouse/chinayoga";
+const BRANCH = "master";
+const GH_API = "https://api.github.com";
+const UPLOAD_DIR = "assets/uploads";
+const MAX_BYTES = 1024 * 1024; // GitHub Contents API 单文件上限 ~1MB（解码后）
+
+function json(res, code, obj) {
+  res.statusCode = code;
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
+  res.end(JSON.stringify(obj));
+}
 
 function readBody(req) {
   return new Promise((resolve, reject) => {
@@ -19,63 +28,71 @@ function readBody(req) {
   });
 }
 
-module.exports = async function handler(req, res) {
-  res.setHeader("Content-Type", "application/json; charset=utf-8");
+async function gh(method, path, body, token) {
+  const res = await fetch(GH_API + path, {
+    method,
+    headers: {
+      Authorization: "Bearer " + token,
+      Accept: "application/vnd.github+json",
+      "User-Agent": "chinayoga-admin",
+      "Content-Type": "application/json",
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const text = await res.text();
+  let data = {};
+  try { data = text ? JSON.parse(text) : {}; } catch (e) {}
+  return { status: res.status, data };
+}
 
-  // 1) 鉴权
-  const adminKey = ADMIN_KEY();
-  if (!adminKey) {
-    res.statusCode = 500;
-    return res.end(JSON.stringify({ error: "服务端未配置 ADMIN_KEY 环境变量" }));
+async function putUpload(token, path, contentB64) {
+  const r = await gh("PUT", `/repos/${REPO}/contents/${path}`, {
+    message: "upload: " + path,
+    content: contentB64,
+    branch: BRANCH,
+  }, token);
+  if (r.status !== 200 && r.status !== 201) {
+    throw new Error("上传到仓库失败(" + r.status + (r.data && r.data.message ? ": " + r.data.message : "") + ")");
   }
+  return r.data;
+}
+
+module.exports = async function handler(req, res) {
+  const token = process.env.GITHUB_TOKEN;
+  const adminKey = process.env.ADMIN_KEY;
+
+  if (!token || !adminKey) {
+    return json(res, 500, { error: "服务端未配置 GITHUB_TOKEN / ADMIN_KEY 环境变量" });
+  }
+
   const provided = req.headers["x-admin-key"] || "";
   if (provided !== adminKey) {
-    res.statusCode = 401;
-    return res.end(JSON.stringify({ error: "管理密码错误" }));
-  }
-
-  // 2) Blob 存储是否就绪
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
-    res.statusCode = 500;
-    return res.end(JSON.stringify({
-      error: "服务端未配置 BLOB_READ_WRITE_TOKEN：请在 Vercel 创建 Blob 存储（Public），它会自动写入该变量，然后重新部署。"
-    }));
+    return json(res, 401, { error: "管理密码错误" });
   }
 
   if (req.method !== "POST") {
-    res.statusCode = 405;
-    return res.end(JSON.stringify({ error: "仅支持 POST" }));
+    return json(res, 405, { error: "仅支持 POST" });
   }
 
   try {
-    // @vercel/blob 可能为 ESM 包，用动态 import 兼容 CommonJS 运行时
-    const { handleUpload } = await import("@vercel/blob/client");
-
     const body = await readBody(req);
+    const b64 = (body && body.content) || "";
+    if (!b64) throw new Error("缺少图片内容");
 
-    const jsonResponse = await handleUpload({
-      body,
-      request: req, // Node IncomingMessage，handleUpload 据此判断动作与回调地址
-      onBeforeGenerateToken: async function (pathname) {
-        // 此处已通过上面的管理密码校验，仅允许本站后台上传
-        return {
-          allowedContentTypes: [
-            "image/jpeg", "image/png", "image/webp", "image/gif",
-            "video/mp4", "video/webm", "video/ogg", "video/quicktime"
-          ],
-          maximumSizeInBytes: 200 * 1024 * 1024, // 单文件上限 200MB（由 Blob 侧强制）
-          addRandomSuffix: true
-        };
-      },
-      onUploadCompleted: async function () {
-        // 上传完成回调（生产环境由 Vercel Blob 调用）。无需写库，直接放行。
-        return;
-      }
-    });
+    // base64 解码校验尺寸（GitHub Contents API 限制 ~1MB 解码后）
+    const buf = Buffer.from(b64, "base64");
+    if (buf.length === 0) throw new Error("图片内容无效");
+    if (buf.length > MAX_BYTES) throw new Error("图片过大，请上传 1MB 以内的图片");
 
-    return res.end(JSON.stringify(jsonResponse));
+    // 客户端已压缩为 JPEG；统一以 .jpg 存储，避免扩展名与内容不符
+    const finalName = Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8) + ".jpg";
+    const path = UPLOAD_DIR + "/" + finalName;
+
+    await putUpload(token, path, buf.toString("base64").replace(/\n/g, ""));
+
+    // 返回站点同域相对地址（在 Vercel 域名与 chinayoga.com 均可用）
+    return json(res, 200, { url: "/" + path });
   } catch (e) {
-    res.statusCode = 400;
-    return res.end(JSON.stringify({ error: e && e.message ? e.message : "上传令牌签发失败" }));
+    return json(res, 400, { error: e && e.message ? e.message : "上传失败" });
   }
 };

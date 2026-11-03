@@ -32,7 +32,7 @@
     .note.tip { color:#8a8268; font-size:12px; margin-top:10px; }
     .field input[type="file"] { padding: 8px; font-size: 13px; background:#fff; }
     .media-preview { margin-top: 8px; }
-    .media-preview img, .media-preview video { max-width: 100%; max-height: 220px; border-radius: 10px; border: 1px solid var(--line); display:block; }
+    .media-preview img { max-width: 100%; max-height: 220px; border-radius: 10px; border: 1px solid var(--line); display:block; }
     .media-preview a { font-size: 13px; color: var(--jade-deep); }
     .field .hint { font-size: 12px; color:#8a8268; margin: 4px 0 0; }
   </style>
@@ -94,10 +94,10 @@
       { key: "news",    label: "最新动态" }
     ];
     var SCHEMA = {
-      essays:  [ {k:"title",l:"标题",r:1}, {k:"tag",l:"栏目标签(如 梧桐山·小记)"}, {k:"author",l:"作者/署名"}, {k:"date",l:"日期 YYYY-MM-DD"}, {k:"body",l:"正文(空行分段)",t:"textarea",r:1}, {k:"image",l:"封面图(可选)",t:"media",accept:"image/*"}, {k:"video",l:"视频(可选)",t:"media",accept:"video/*"} ],
+      essays:  [ {k:"title",l:"标题",r:1}, {k:"tag",l:"栏目标签(如 梧桐山·小记)"}, {k:"author",l:"作者/署名"}, {k:"date",l:"日期 YYYY-MM-DD"}, {k:"body",l:"正文(空行分段)",t:"textarea",r:1}, {k:"image",l:"封面图(可选)",t:"media",accept:"image/*"} ],
       cases:   [ {k:"name",l:"姓名/称呼",r:1}, {k:"tag",l:"主题标签"}, {k:"icon",l:"图标 emoji"}, {k:"text",l:"分享内容",t:"textarea",r:1}, {k:"image",l:"照片(可选)",t:"media",accept:"image/*"} ],
       charity: [ {k:"title",l:"标题",r:1}, {k:"date",l:"时间/年份(如 日常/常年)"}, {k:"body",l:"内容",t:"textarea",r:1}, {k:"image",l:"照片(可选)",t:"media",accept:"image/*"} ],
-      news:    [ {k:"title",l:"标题",r:1}, {k:"date",l:"日期 YYYY-MM-DD"}, {k:"content",l:"内容",t:"textarea",r:1}, {k:"image",l:"封面图(可选)",t:"media",accept:"image/*"}, {k:"video",l:"视频(可选)",t:"media",accept:"video/*"} ]
+      news:    [ {k:"title",l:"标题",r:1}, {k:"date",l:"日期 YYYY-MM-DD"}, {k:"content",l:"内容",t:"textarea",r:1}, {k:"image",l:"封面图(可选)",t:"media",accept:"image/*"} ]
     };
     var KEY = "cy_admin_key";
     var state = { type: "essays", editingId: null };
@@ -158,9 +158,9 @@
             if (f.t === "media") {
               return '<div class="field"><label>' + esc(f.l) + "</label>" +
                 '<input type="file" accept="' + (f.accept || "") + '" data-media="' + f.k + '">' +
-                '<p class="hint">选择文件后自动上传（图片≤15MB，视频≤200MB）；也可在下方直接粘贴外部图片/视频网址。</p>' +
+                '<p class="hint">选择图片后将自动压缩并上传（建议原图≤4MB，系统会压到 1MB 内）；也可在下方直接粘贴外部图片网址。</p>' +
                 '<div class="media-preview" id="prev-' + f.k + '">' + previewHtml(f.k, val) + "</div>" +
-                '<input type="text" name="' + f.k + '" value="' + esc(val) + '" placeholder="上传后自动填入，也可直接粘贴图片/视频网址">' +
+                '<input type="text" name="' + f.k + '" value="' + esc(val) + '" placeholder="上传后自动填入，也可直接粘贴图片网址">' +
                 (val ? '<button type="button" class="btn btn-outline btn-sm" data-clear="' + f.k + '">移除</button>' : "") +
                 "</div>";
             }
@@ -175,7 +175,7 @@
               var field = inp.getAttribute("data-media");
               var file = inp.files && inp.files[0];
               if (!file) return;
-              uploadMedia(field, file);
+              uploadImage(field, file);
             });
           });
           bindClearButtons();
@@ -185,11 +185,7 @@
 
     function previewHtml(field, url) {
       if (!url) return "";
-      url = esc(url);
-      if (field === "video" || /\.(mp4|webm|ogg|mov|m4v)$/i.test(url)) {
-        return '<video src="' + url + '" controls preload="none"></video>';
-      }
-      return '<img src="' + url + '" alt="预览">';
+      return '<img src="' + esc(url) + '" alt="预览">';
     }
 
     function bindClearButtons() {
@@ -205,32 +201,78 @@
       });
     }
 
-    function uploadMedia(field, file) {
+    function uploadImage(field, file) {
       var prev = el("prev-" + field);
       var hidden = el("itemForm").querySelector('[name="' + field + '"]');
-      var limit = field === "video" ? 200 * 1024 * 1024 : 15 * 1024 * 1024;
-      if (file.size > limit) {
-        alert((field === "video" ? "视频" : "图片") + "过大，上限 " + (field === "video" ? "200" : "15") + "MB。大视频建议压缩后上传。");
+      if (file.size > 8 * 1024 * 1024) {
+        alert("图片原始文件过大（>8MB），请先压缩或换一张较小的图。");
         return;
       }
-      prev.innerHTML = "⏳ 上传中…";
-      import("https://cdn.jsdelivr.net/npm/@vercel/blob/client/+esm")
-        .then(function (mod) {
-          return mod.upload(file.name, file, { access: "public", handleUploadUrl: "/api/upload" });
+      prev.innerHTML = "⏳ 压缩并上传中…";
+      compressImage(file, 1280, 0.82)
+        .then(function (blob) { return blobToBase64(blob); })
+        .then(function (b64) {
+          // 解码后字节数约为 base64 长度的 3/4，超出 1MB 时提示换图
+          if (Math.floor(b64.length * 3 / 4) > 1000 * 1024) {
+            throw new Error("压缩后图片仍偏大，请换一张更小的图");
+          }
+          return fetch("/api/upload", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "x-admin-key": key() },
+            body: JSON.stringify({ filename: file.name || "image.jpg", content: b64 }),
+          }).then(function (r) {
+            return r.json().then(function (d) {
+              if (!r.ok) throw new Error(d.error || ("HTTP " + r.status));
+              return d;
+            });
+          });
         })
-        .then(function (blob) {
-          hidden.value = blob.url;
-          prev.innerHTML = previewHtml(field, blob.url) +
+        .then(function (d) {
+          hidden.value = d.url;
+          prev.innerHTML = previewHtml(field, d.url) +
             ' <button type="button" class="btn btn-outline btn-sm" data-clear="' + field + '">移除</button>';
           bindClearButtons();
         })
         .catch(function (e) {
           var msg = (e && e.message) ? e.message : "上传失败";
-          if (/Failed to fetch|import|network|加载|module/i.test(msg)) {
-            msg = "上传组件加载失败（可能是网络/CDN 受限）。可改用「直接粘贴外部图片/视频网址」的方式。";
+          if (/Failed to fetch|network/i.test(msg)) {
+            msg = "网络异常，上传未成功。可改用「直接粘贴外部图片网址」的方式。";
           }
           prev.innerHTML = "✗ " + msg;
         });
+    }
+
+    // 用 canvas 把图片缩放到最大边 maxDim、并以 JPEG 质量 quality 压缩（控制体积，便于写入仓库）
+    function compressImage(file, maxDim, quality) {
+      return new Promise(function (resolve, reject) {
+        var url = URL.createObjectURL(file);
+        var img = new Image();
+        img.onload = function () {
+          URL.revokeObjectURL(url);
+          var w = img.naturalWidth, h = img.naturalHeight;
+          var scale = Math.min(1, maxDim / Math.max(w, h));
+          var cw = Math.max(1, Math.round(w * scale)), ch = Math.max(1, Math.round(h * scale));
+          var canvas = document.createElement("canvas");
+          canvas.width = cw; canvas.height = ch;
+          var ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, cw, ch);
+          canvas.toBlob(function (blob) {
+            if (!blob) return reject(new Error("图片压缩失败"));
+            resolve(blob);
+          }, "image/jpeg", quality);
+        };
+        img.onerror = function () { URL.revokeObjectURL(url); reject(new Error("无法读取该图片")); };
+        img.src = url;
+      });
+    }
+
+    function blobToBase64(blob) {
+      return new Promise(function (resolve, reject) {
+        var reader = new FileReader();
+        reader.onload = function () { resolve((reader.result || "").split(",")[1] || ""); };
+        reader.onerror = function () { reject(new Error("读取图片失败")); };
+        reader.readAsDataURL(blob);
+      });
     }
 
     function save() {

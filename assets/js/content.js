@@ -42,17 +42,11 @@
     }
   }
 
-  // ---- 媒体（图片/视频）渲染 ----
+  // ---- 媒体（图片）渲染 ----
   function mediaHtml(it) {
-    var h = "";
-    if (it.image) {
-      h += '<div class="media"><img src="' + esc(it.image) + '" alt="' +
-        esc(it.title || it.name || "配图") + '" loading="lazy"></div>';
-    }
-    if (it.video) {
-      h += '<div class="media"><video src="' + esc(it.video) + '" controls preload="none"></video></div>';
-    }
-    return h;
+    if (!it.image) return "";
+    return '<div class="media"><img src="' + esc(it.image) + '" alt="' +
+      esc(it.title || it.name || "配图") + '" loading="lazy"></div>';
   }
 
   // ---- 各类型渲染模板（返回容器内部 HTML） ----

@@ -335,5 +335,5 @@ p  { margin: 0 0 1.1em; color: var(--ink-soft); }
 
 /* 动态内容中的图片 / 视频 */
 .media { margin: 12px 0 4px; }
-.media img, .media video { width: 100%; max-height: 420px; object-fit: cover; border-radius: 12px; display: block; background: var(--paper-2); }
-.tl-item .media img, .tl-item .media video { max-height: 320px; }
+.media img { width: 100%; max-height: 420px; object-fit: cover; border-radius: 12px; display: block; background: var(--paper-2); }
+.tl-item .media img { max-height: 320px; }
