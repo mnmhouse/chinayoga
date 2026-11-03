@@ -30,6 +30,11 @@
     .form-actions { display: flex; gap: 10px; margin-top: 6px; }
     .form-result { color: var(--jade-deep); font-size: 14px; margin-top: 12px; display: none; }
     .note.tip { color:#8a8268; font-size:12px; margin-top:10px; }
+    .field input[type="file"] { padding: 8px; font-size: 13px; background:#fff; }
+    .media-preview { margin-top: 8px; }
+    .media-preview img, .media-preview video { max-width: 100%; max-height: 220px; border-radius: 10px; border: 1px solid var(--line); display:block; }
+    .media-preview a { font-size: 13px; color: var(--jade-deep); }
+    .field .hint { font-size: 12px; color:#8a8268; margin: 4px 0 0; }
   </style>
 </head>
 <body>
@@ -89,10 +94,10 @@
       { key: "news",    label: "最新动态" }
     ];
     var SCHEMA = {
-      essays:  [ {k:"title",l:"标题",r:1}, {k:"tag",l:"栏目标签(如 梧桐山·小记)"}, {k:"author",l:"作者/署名"}, {k:"date",l:"日期 YYYY-MM-DD"}, {k:"body",l:"正文(空行分段)",t:"textarea",r:1} ],
-      cases:   [ {k:"name",l:"姓名/称呼",r:1}, {k:"tag",l:"主题标签"}, {k:"icon",l:"图标 emoji"}, {k:"text",l:"分享内容",t:"textarea",r:1} ],
-      charity: [ {k:"title",l:"标题",r:1}, {k:"date",l:"时间/年份(如 日常/常年)"}, {k:"body",l:"内容",t:"textarea",r:1} ],
-      news:    [ {k:"title",l:"标题",r:1}, {k:"date",l:"日期 YYYY-MM-DD"}, {k:"content",l:"内容",t:"textarea",r:1} ]
+      essays:  [ {k:"title",l:"标题",r:1}, {k:"tag",l:"栏目标签(如 梧桐山·小记)"}, {k:"author",l:"作者/署名"}, {k:"date",l:"日期 YYYY-MM-DD"}, {k:"body",l:"正文(空行分段)",t:"textarea",r:1}, {k:"image",l:"封面图(可选)",t:"media",accept:"image/*"}, {k:"video",l:"视频(可选)",t:"media",accept:"video/*"} ],
+      cases:   [ {k:"name",l:"姓名/称呼",r:1}, {k:"tag",l:"主题标签"}, {k:"icon",l:"图标 emoji"}, {k:"text",l:"分享内容",t:"textarea",r:1}, {k:"image",l:"照片(可选)",t:"media",accept:"image/*"} ],
+      charity: [ {k:"title",l:"标题",r:1}, {k:"date",l:"时间/年份(如 日常/常年)"}, {k:"body",l:"内容",t:"textarea",r:1}, {k:"image",l:"照片(可选)",t:"media",accept:"image/*"} ],
+      news:    [ {k:"title",l:"标题",r:1}, {k:"date",l:"日期 YYYY-MM-DD"}, {k:"content",l:"内容",t:"textarea",r:1}, {k:"image",l:"封面图(可选)",t:"media",accept:"image/*"}, {k:"video",l:"视频(可选)",t:"media",accept:"video/*"} ]
     };
     var KEY = "cy_admin_key";
     var state = { type: "essays", editingId: null };
@@ -150,12 +155,81 @@
           var cur = id ? (data.filter(function (x) { return x.id === id; })[0] || {}) : {};
           el("itemForm").innerHTML = fields.map(function (f) {
             var val = cur[f.k] != null ? cur[f.k] : "";
+            if (f.t === "media") {
+              return '<div class="field"><label>' + esc(f.l) + "</label>" +
+                '<input type="file" accept="' + (f.accept || "") + '" data-media="' + f.k + '">' +
+                '<p class="hint">选择文件后自动上传（图片≤15MB，视频≤200MB）；也可在下方直接粘贴外部图片/视频网址。</p>' +
+                '<div class="media-preview" id="prev-' + f.k + '">' + previewHtml(f.k, val) + "</div>" +
+                '<input type="text" name="' + f.k + '" value="' + esc(val) + '" placeholder="上传后自动填入，也可直接粘贴图片/视频网址">' +
+                (val ? '<button type="button" class="btn btn-outline btn-sm" data-clear="' + f.k + '">移除</button>' : "") +
+                "</div>";
+            }
             return '<div class="field"><label>' + esc(f.l) + (f.r ? " *" : "") + "</label>" +
               (f.t === "textarea"
                 ? '<textarea name="' + f.k + '">' + esc(val) + "</textarea>"
                 : '<input name="' + f.k + '" value="' + esc(val) + '">') + "</div>";
           }).join("");
+          // 绑定媒体上传与移除
+          Array.prototype.forEach.call(el("itemForm").querySelectorAll("[data-media]"), function (inp) {
+            inp.addEventListener("change", function () {
+              var field = inp.getAttribute("data-media");
+              var file = inp.files && inp.files[0];
+              if (!file) return;
+              uploadMedia(field, file);
+            });
+          });
+          bindClearButtons();
           el("formPanel").style.display = "block";
+        });
+    }
+
+    function previewHtml(field, url) {
+      if (!url) return "";
+      url = esc(url);
+      if (field === "video" || /\.(mp4|webm|ogg|mov|m4v)$/i.test(url)) {
+        return '<video src="' + url + '" controls preload="none"></video>';
+      }
+      return '<img src="' + url + '" alt="预览">';
+    }
+
+    function bindClearButtons() {
+      Array.prototype.forEach.call(el("itemForm").querySelectorAll("[data-clear]"), function (b) {
+        b.addEventListener("click", function () {
+          var field = b.getAttribute("data-clear");
+          var hidden = el("itemForm").querySelector('[name="' + field + '"]');
+          if (hidden) hidden.value = "";
+          var prev = el("prev-" + field);
+          if (prev) prev.innerHTML = "";
+          b.remove();
+        });
+      });
+    }
+
+    function uploadMedia(field, file) {
+      var prev = el("prev-" + field);
+      var hidden = el("itemForm").querySelector('[name="' + field + '"]');
+      var limit = field === "video" ? 200 * 1024 * 1024 : 15 * 1024 * 1024;
+      if (file.size > limit) {
+        alert((field === "video" ? "视频" : "图片") + "过大，上限 " + (field === "video" ? "200" : "15") + "MB。大视频建议压缩后上传。");
+        return;
+      }
+      prev.innerHTML = "⏳ 上传中…";
+      import("https://cdn.jsdelivr.net/npm/@vercel/blob/client/+esm")
+        .then(function (mod) {
+          return mod.upload(file.name, file, { access: "public", handleUploadUrl: "/api/upload" });
+        })
+        .then(function (blob) {
+          hidden.value = blob.url;
+          prev.innerHTML = previewHtml(field, blob.url) +
+            ' <button type="button" class="btn btn-outline btn-sm" data-clear="' + field + '">移除</button>';
+          bindClearButtons();
+        })
+        .catch(function (e) {
+          var msg = (e && e.message) ? e.message : "上传失败";
+          if (/Failed to fetch|import|network|加载|module/i.test(msg)) {
+            msg = "上传组件加载失败（可能是网络/CDN 受限）。可改用「直接粘贴外部图片/视频网址」的方式。";
+          }
+          prev.innerHTML = "✗ " + msg;
         });
     }
 

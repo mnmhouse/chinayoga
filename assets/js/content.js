@@ -42,6 +42,19 @@
     }
   }
 
+  // ---- 媒体（图片/视频）渲染 ----
+  function mediaHtml(it) {
+    var h = "";
+    if (it.image) {
+      h += '<div class="media"><img src="' + esc(it.image) + '" alt="' +
+        esc(it.title || it.name || "配图") + '" loading="lazy"></div>';
+    }
+    if (it.video) {
+      h += '<div class="media"><video src="' + esc(it.video) + '" controls preload="none"></video></div>';
+    }
+    return h;
+  }
+
   // ---- 各类型渲染模板（返回容器内部 HTML） ----
   function renderEssays(data) {
     return data
@@ -52,6 +65,7 @@
           '<span class="eyebrow">' + esc(it.tag || "随笔") + "</span>" +
           "<h3>" + esc(it.title) + "</h3>" +
           (meta ? '<p class="note">' + esc(meta) + "</p>" : "") +
+          mediaHtml(it) +
           bodyToHtml(it.body || it.excerpt || "") +
           (it.author ? '<p class="note">—— ' + esc(it.author) + "</p>" : "") +
           "</article>"
@@ -68,6 +82,7 @@
           '<div class="ic">' + esc(it.icon || "🧡") + "</div>" +
           "<h3>" + esc(it.name) + (it.tag ? " · " + esc(it.tag) : "") + "</h3>" +
           "<p>" + esc(it.text) + "</p>" +
+          mediaHtml(it) +
           '<p class="note">—— 个人体验分享，非医疗承诺</p>' +
           "</div>"
         );
@@ -82,6 +97,7 @@
           '<div class="tl-item">' +
           '<div class="year">' + esc(it.date || "日常") + "</div>" +
           "<h3>" + esc(it.title) + "</h3>" +
+          mediaHtml(it) +
           "<p>" + esc(it.body || "") + "</p>" +
           "</div>"
         );
@@ -96,6 +112,7 @@
           '<div class="card reveal">' +
           '<span class="eyebrow">' + esc(it.date || "动态") + "</span>" +
           "<h3>" + esc(it.title) + "</h3>" +
+          mediaHtml(it) +
           bodyToHtml(it.content || "") +
           "</div>"
         );
