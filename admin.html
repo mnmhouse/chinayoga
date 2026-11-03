@@ -94,10 +94,10 @@
       { key: "news",    label: "最新动态" }
     ];
     var SCHEMA = {
-      essays:  [ {k:"title",l:"标题",r:1}, {k:"tag",l:"栏目标签(如 梧桐山·小记)"}, {k:"author",l:"作者/署名"}, {k:"date",l:"日期 YYYY-MM-DD"}, {k:"body",l:"正文(空行分段)",t:"textarea",r:1}, {k:"image",l:"封面图(可选)",t:"media",accept:"image/*"} ],
-      cases:   [ {k:"name",l:"姓名/称呼",r:1}, {k:"tag",l:"主题标签"}, {k:"icon",l:"图标 emoji"}, {k:"text",l:"分享内容",t:"textarea",r:1}, {k:"image",l:"照片(可选)",t:"media",accept:"image/*"} ],
-      charity: [ {k:"title",l:"标题",r:1}, {k:"date",l:"时间/年份(如 日常/常年)"}, {k:"body",l:"内容",t:"textarea",r:1}, {k:"image",l:"照片(可选)",t:"media",accept:"image/*"} ],
-      news:    [ {k:"title",l:"标题",r:1}, {k:"date",l:"日期 YYYY-MM-DD"}, {k:"content",l:"内容",t:"textarea",r:1}, {k:"image",l:"封面图(可选)",t:"media",accept:"image/*"} ]
+      essays:  [ {k:"title",l:"标题",r:1}, {k:"tag",l:"栏目标签(如 梧桐山·小记)"}, {k:"author",l:"作者/署名"}, {k:"date",l:"日期 YYYY-MM-DD"}, {k:"body",l:"正文(空行分段)",t:"textarea",r:1}, {k:"image",l:"封面图(可选)",t:"media",accept:"image/*"}, {k:"video",l:"视频网址(可选，仅粘贴外部链接)"} ],
+      cases:   [ {k:"name",l:"姓名/称呼",r:1}, {k:"tag",l:"主题标签"}, {k:"icon",l:"图标 emoji"}, {k:"text",l:"分享内容",t:"textarea",r:1}, {k:"image",l:"照片(可选)",t:"media",accept:"image/*"}, {k:"video",l:"视频网址(可选，仅粘贴外部链接)"} ],
+      charity: [ {k:"title",l:"标题",r:1}, {k:"date",l:"时间/年份(如 日常/常年)"}, {k:"body",l:"内容",t:"textarea",r:1}, {k:"image",l:"照片(可选)",t:"media",accept:"image/*"}, {k:"video",l:"视频网址(可选，仅粘贴外部链接)"} ],
+      news:    [ {k:"title",l:"标题",r:1}, {k:"date",l:"日期 YYYY-MM-DD"}, {k:"content",l:"内容",t:"textarea",r:1}, {k:"image",l:"封面图(可选)",t:"media",accept:"image/*"}, {k:"video",l:"视频网址(可选，仅粘贴外部链接)"} ]
     };
     var KEY = "cy_admin_key";
     var state = { type: "essays", editingId: null };

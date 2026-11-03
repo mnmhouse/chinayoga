@@ -42,11 +42,36 @@
     }
   }
 
-  // ---- 媒体（图片）渲染 ----
-  function mediaHtml(it) {
+  // ---- 媒体（图片 + 视频外链）渲染 ----
+  function imageHtml(it) {
     if (!it.image) return "";
     return '<div class="media"><img src="' + esc(it.image) + '" alt="' +
       esc(it.title || it.name || "配图") + '" loading="lazy"></div>';
+  }
+
+  // 视频网址：直链视频(<video>)、YouTube/Bilibili 自动转嵌入、其余显示为可点外链
+  function videoHtml(url) {
+    if (!url) return "";
+    url = String(url).trim();
+    var yt = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([\w-]{6,})/i);
+    if (yt) {
+      return '<div class="media"><iframe class="video-frame" src="https://www.youtube.com/embed/' +
+        esc(yt[1]) + '" allowfullscreen loading="lazy" frameborder="0" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe></div>';
+    }
+    var bili = url.match(/bilibili\.com\/video\/(BV[\w]+)/i);
+    if (bili) {
+      return '<div class="media"><iframe class="video-frame" src="https://player.bilibili.com/player.html?bvid=' +
+        esc(bili[1]) + '&page=1" allowfullscreen loading="lazy" frameborder="0"></iframe></div>';
+    }
+    if (/\.(mp4|webm|ogg|mov|m4v)$/i.test(url)) {
+      return '<div class="media"><video src="' + esc(url) + '" controls preload="metadata"></video></div>';
+    }
+    return '<div class="media"><a class="video-link" href="' + esc(url) +
+      '" target="_blank" rel="noopener">观看视频 ↗</a></div>';
+  }
+
+  function mediaHtml(it) {
+    return imageHtml(it) + videoHtml(it.video);
   }
 
   // ---- 各类型渲染模板（返回容器内部 HTML） ----

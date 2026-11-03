@@ -337,3 +337,6 @@ p  { margin: 0 0 1.1em; color: var(--ink-soft); }
 .media { margin: 12px 0 4px; }
 .media img { width: 100%; max-height: 420px; object-fit: cover; border-radius: 12px; display: block; background: var(--paper-2); }
 .tl-item .media img { max-height: 320px; }
+.media iframe.video-frame { width: 100%; aspect-ratio: 16 / 9; border: 0; border-radius: 12px; display: block; background: #000; }
+.media video { width: 100%; max-height: 420px; border-radius: 12px; display: block; background: #000; }
+.media a.video-link { display: inline-block; padding: 10px 16px; border: 1px solid var(--line); border-radius: 10px; font-weight: 600; }
