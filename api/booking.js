@@ -120,7 +120,8 @@ module.exports = async function handler(req, res) {
     }
 
     if (req.method === "DELETE") {
-      const { id } = await readBody(req);
+      const b = await readBody(req);
+      const id = b.id || url.searchParams.get("id") || "";
       if (!id) return json(res, 400, { error: "缺少 id" });
       const f = await getFile(token);
       const next = f.items.filter((x) => x.id !== id);
