@@ -4,14 +4,14 @@
 
   var NAV = [
     { href: "index.html",        label: "首页" },
+    { href: "essays.html",       label: "文化随笔" },
+    { href: "cases.html",        label: "学员案例" },
     { href: "books.html",        label: "好书共读" },
     { href: "courses.html",      label: "小动作大作用" },
     { href: "products.html",     label: "食疗产品" },
     { href: "base.html",         label: "线下基地" },
     { href: "charity.html",      label: "公益善行" },
-    { href: "alliance.html",     label: "康养联盟" },
-    { href: "essays.html",       label: "文化随笔" },
-    { href: "cases.html",        label: "学员案例" },
+    { href: "alliance.html",      label: "康养联盟" },
     { href: "booking.html",      label: "线下预约" }
   ];
 

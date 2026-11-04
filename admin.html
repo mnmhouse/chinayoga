@@ -91,8 +91,10 @@
       { key: "essays",  label: "文化随笔" },
       { key: "cases",   label: "学员案例" },
       { key: "charity", label: "公益善行" },
-      { key: "news",    label: "最新动态" }
+      { key: "news",    label: "最新动态" },
+      { key: "bookings", label: "预约登记" }
     ];
+    var IS_BOOKING = function (t) { return t === "bookings"; };
     var SCHEMA = {
       essays:  [ {k:"title",l:"标题",r:1}, {k:"tag",l:"栏目标签(如 梧桐山·小记)"}, {k:"author",l:"作者/署名"}, {k:"date",l:"日期 YYYY-MM-DD"}, {k:"body",l:"正文(空行分段)",t:"textarea",r:1}, {k:"image",l:"封面图(可选)",t:"media",accept:"image/*"}, {k:"video",l:"视频网址(可选，仅粘贴外部链接)"} ],
       cases:   [ {k:"name",l:"姓名/称呼",r:1}, {k:"tag",l:"主题标签"}, {k:"icon",l:"图标 emoji"}, {k:"text",l:"分享内容",t:"textarea",r:1}, {k:"image",l:"照片(可选)",t:"media",accept:"image/*"}, {k:"video",l:"视频网址(可选，仅粘贴外部链接)"} ],
@@ -121,6 +123,31 @@
     }
 
     function loadList() {
+      var isBk = IS_BOOKING(state.type);
+      el("newBtn").style.display = isBk ? "none" : "inline-block";
+
+      if (isBk) {
+        fetch("/api/booking?t=" + Date.now(), { headers: { "x-admin-key": key() } })
+          .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+          .then(function (res) {
+            if (!res.ok) throw new Error(res.d.error || "加载失败");
+            var items = Array.isArray(res.d.items) ? res.d.items : [];
+            if (!items.length) { el("listItems").innerHTML = '<p class="note">暂无预约登记。访客在前台「线下预约」提交后会显示在这里。</p>'; return; }
+            el("listItems").innerHTML = items.map(function (it) {
+              var meta = [it.project, it.contact, it.date, it.createdAt ? it.createdAt.replace("T", " ").slice(0, 16) : ""].filter(Boolean).join(" ｜ ");
+              return '<div class="item"><h4>' + esc(it.name || "(无名)") + "</h4>" +
+                (meta ? '<div class="meta">' + esc(meta) + "</div>" : "") +
+                (it.note ? '<p class="note" style="font-size:13px;margin:6px 0 10px">' + esc(it.note) + "</p>" : "") +
+                '<div class="row"><button class="btn btn-outline btn-sm" data-del="' + esc(it.id) + '">已处理/删除</button></div></div>';
+            }).join("");
+            Array.prototype.forEach.call(el("listItems").querySelectorAll("[data-del]"), function (b) {
+              b.addEventListener("click", function () { del(b.getAttribute("data-del")); });
+            });
+          })
+          .catch(function (e) { el("listItems").innerHTML = '<p class="note">加载失败：' + esc(e.message) + "</p>"; });
+        return;
+      }
+
       fetch("content/" + state.type + ".json", { cache: "no-cache" })
         .then(function (r) { return r.ok ? r.json() : []; })
         .then(function (data) {
@@ -304,7 +331,14 @@
     }
 
     function del(id) {
-      if (!confirm("确定删除这条内容？")) return;
+      if (!confirm(IS_BOOKING(state.type) ? "确定删除这条预约登记？" : "确定删除这条内容？")) return;
+      if (IS_BOOKING(state.type)) {
+        fetch("/api/booking?id=" + encodeURIComponent(id), { method: "DELETE", headers: { "x-admin-key": key() } })
+          .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+          .then(function (res) { if (!res.ok) throw new Error(res.d.error || "删除失败"); loadList(); })
+          .catch(function (e) { alert("删除失败：" + (e.message || "未知错误")); });
+        return;
+      }
       api("DELETE", state.type, { id: id })
         .then(function () { loadList(); })
         .catch(function (e) { alert("删除失败：" + (e && e.message ? e.message : "未知错误")); });

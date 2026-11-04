@@ -36,13 +36,13 @@
           </div>
         </div>
 
-        <form class="card reveal" data-demo>
+        <form class="card reveal" id="bookingForm">
           <h3>预约登记</h3>
           <div class="form-grid">
-            <div class="field"><label>姓名</label><input type="text" placeholder="称呼" required></div>
-            <div class="field"><label>手机 / 微信</label><input type="text" placeholder="便于联系" required></div>
+            <div class="field"><label>姓名 *</label><input type="text" name="name" placeholder="称呼" required></div>
+            <div class="field"><label>手机 / 微信 *</label><input type="text" name="contact" placeholder="便于联系" required></div>
             <div class="field"><label>预约项目</label>
-              <select>
+              <select name="project">
                 <option>赤脚养生班</option>
                 <option>熏蒸康养</option>
                 <option>小动作养生班</option>
@@ -50,10 +50,14 @@
                 <option>多项 / 待建议</option>
               </select>
             </div>
-            <div class="field"><label>期望到访日期</label><input type="date"></div>
+            <div class="field"><label>期望到访日期</label><input type="date" name="date"></div>
             <div class="field full"><label>人数 / 备注</label>
-              <textarea placeholder="同行人数、特殊需求或想了解的内容"></textarea>
+              <textarea name="note" placeholder="同行人数、特殊需求或想了解的内容"></textarea>
             </div>
+          </div>
+          <!-- 蜜罐：正常用户不可见，机器人可能误填，用于拦截垃圾提交 -->
+          <div style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden" aria-hidden="true">
+            <label>请勿填写</label><input type="text" name="company" tabindex="-1" autocomplete="off">
           </div>
           <div class="hero-actions" style="margin-top:18px">
             <button class="btn btn-primary" type="submit">提交预约</button>
@@ -66,5 +70,54 @@
 
   <footer class="site-footer" id="site-footer"></footer>
   <script src="assets/js/main.js"></script>
+  <script>
+  (function () {
+    var form = document.getElementById("bookingForm");
+    if (!form) return;
+    function val(n) { var el = form.querySelector('[name="' + n + '"]'); return el ? el.value.trim() : ""; }
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var box = form.querySelector(".form-result");
+      var btn = form.querySelector('button[type="submit"]');
+      var data = {
+        name: val("name"),
+        contact: val("contact"),
+        project: (form.querySelector('[name="project"]') || {}).value || "",
+        date: val("date"),
+        note: val("note"),
+        company: val("company")
+      };
+      if (!data.name || !data.contact) {
+        box.style.color = "#b04a3a";
+        box.textContent = "请填写称呼与手机/微信。";
+        box.style.display = "block";
+        return;
+      }
+      btn.disabled = true; btn.textContent = "提交中…";
+      fetch("/api/booking", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      })
+        .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+        .then(function (res) {
+          if (res.ok && res.d.ok) {
+            box.style.color = "var(--jade-deep)";
+            box.textContent = "✓ 已收到您的预约登记，基地守护人将于 1–2 个工作日内通过您留下的方式与您联系。";
+            box.style.display = "block";
+            form.reset();
+          } else {
+            throw new Error((res.d && res.d.error) || "提交失败");
+          }
+        })
+        .catch(function (err) {
+          box.style.color = "#b04a3a";
+          box.textContent = "✗ " + (err.message || "提交失败，请稍后重试，或直接通过页脚微信联系我们。");
+          box.style.display = "block";
+        })
+        .then(function () { btn.disabled = false; btn.textContent = "提交预约"; });
+    });
+  })();
+  </script>
 </body>
 </html>
