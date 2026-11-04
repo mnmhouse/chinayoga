@@ -11,11 +11,16 @@
     });
   }
 
-  // 正文：空行分段为 <p>，行内换行转 <br>
+  // 正文：空行分段；若某段为「行内图片标记」![](地址) 则渲染为配图，否则渲染为 <p>
+  var IMG_RE = /^!\[\]\((\/[^)\s]+|https?:\/\/[^)\s]+)\)$/;
   function bodyToHtml(text) {
     return String(text || "")
       .split(/\n{2,}/)
       .map(function (p) {
+        var m = p.trim().match(IMG_RE);
+        if (m) {
+          return '<div class="media"><img src="' + esc(m[1]) + '" alt="配图" loading="lazy"></div>';
+        }
         return "<p>" + esc(p).replace(/\n/g, "<br>") + "</p>";
       })
       .join("");
