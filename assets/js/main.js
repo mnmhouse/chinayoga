@@ -59,7 +59,9 @@
             '<a href="booking.html">预约梧桐山体验</a>' +
             '<a href="alliance.html">申请入驻合作</a>' +
             '<a href="cases.html">学员案例</a>' +
-            '<span class="note" style="color:#b6ad95">www.chinayoga.com</span></div>' +
+            '<a href="https://www.chinayoga.com" style="display:block;margin-top:6px">官网　www.chinayoga.com</a>' +
+            '<span class="note" style="color:#b6ad95;display:block;margin-top:6px">微信　ztsng666888</span>' +
+            '<span class="note" style="color:#b6ad95;display:block">小红书　ccgltzyg666888</span></div>' +
         '</div>' +
         '<div class="footer-bottom">' +
           '© ' + new Date().getFullYear() + ' 中国瑜伽网康养联盟 · 慈禅甘露堂　|　以产业养公益，以公益润人心，以修行养生命' +
